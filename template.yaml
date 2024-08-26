@@ -1,16 +1,76 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: A serverless application for managing users
+Description: >
+  SAM template for postUser and getUser Lambda functions with API Gateway and DynamoDB
 
 Globals:
   Function:
     Timeout: 10
+    Runtime: nodejs16.x
+    Handler: index.handler
+  Api:
+    Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'content-type'"
+        AllowOrigin: "'*'"
+          # AllowCredentials: true  Uncomment only if you choose a specific origin instead of the * wildcard.
 
 Resources:
-  UserTable:
+  # Lambda function to handle POST /users
+  PostUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: PostUserFunction
+      CodeUri: ./src/
+      Handler: postUsers.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AnhUser
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnhUser
+      Events:
+        PostUserAPI:
+          Type: Api
+          Properties:
+            Path: /users
+            Method: POST
+            RestApiId: !Ref UserApi
+
+  # Lambda function to handle GET /users/{id}
+  GetUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetUserFunction
+      CodeUri: ./src/
+      Handler: getUsers.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AnhUser
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnhUser
+      Events:
+        GetUserAPI:
+          Type: Api
+          Properties:
+            Path: /users/{id}
+            Method: GET
+            RestApiId: !Ref UserApi
+
+  # API Gateway definition
+  UserApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: UserApi
+      StageName: Prod
+      EndpointConfiguration: REGIONAL
+
+  # DynamoDB table definition
+  AnhUser:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: UserTable
+      TableName: AnhUser
       AttributeDefinitions:
         - AttributeName: id
           AttributeType: S
@@ -19,56 +79,9 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
-  UUIDLayer:
-    Type: AWS::Serverless::LayerVersion
-    Properties:
-      LayerName: uuid-layer
-      ContentUri: layers/uuid
-      CompatibleRuntimes:
-        - nodejs18.x
-
-  PostUserFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/postUser.handler
-      Runtime: nodejs18.x
-      CodeUri: src/
-      Layers:
-        - !Ref UUIDLayer
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref UserTable
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref UserTable
-      Events:
-        PostUserApi:
-          Type: Api
-          Properties:
-            Path: /users
-            Method: POST
-
-  GetUserFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: src/getUsers.handler
-      Runtime: nodejs18.x
-      CodeUri: src/
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref UserTable
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref UserTable
-      Events:
-        GetUserApi:
-          Type: Api
-          Properties:
-            Path: /users
-            Method: GET
-
 Outputs:
-  ApiGatewayUrl:
-    Description: "URL for the API Gateway endpoint"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/users"
- 
+  ApiUrl:
+    Description: "API Gateway endpoint URL for Prod stage"
+    Value: !Sub "https://${UserApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+    Export:
+      Name: ApiGatewayInvokeURL
