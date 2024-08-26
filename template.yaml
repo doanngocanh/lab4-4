@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: A serverless application for managing users
+
+Globals:
+  Function:
+    Timeout: 10
+
+Resources:
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: UserTable
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  UUIDLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: uuid-layer
+      ContentUri: layers/uuid
+      CompatibleRuntimes:
+        - nodejs18.x
+
+  PostUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/postUser.handler
+      Runtime: nodejs18.x
+      CodeUri: src/
+      Layers:
+        - !Ref UUIDLayer
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        PostUserApi:
+          Type: Api
+          Properties:
+            Path: /users
+            Method: POST
+
+  GetUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/getUsers.handler
+      Runtime: nodejs18.x
+      CodeUri: src/
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UserTable
+      Events:
+        GetUserApi:
+          Type: Api
+          Properties:
+            Path: /users
+            Method: GET
+
+Outputs:
+  ApiGatewayUrl:
+    Description: "URL for the API Gateway endpoint"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/users"
+ 
