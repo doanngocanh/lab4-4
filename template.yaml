@@ -10,12 +10,22 @@ Globals:
     Handler: index.handler
   Api:
     Cors:
-        AllowMethods: "'GET,POST,OPTIONS'"
-        AllowHeaders: "'content-type'"
-        AllowOrigin: "'*'"
-          # AllowCredentials: true  Uncomment only if you choose a specific origin instead of the * wildcard.
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'content-type'"
+      AllowOrigin: "'*'"
+      # AllowCredentials: true  # Uncomment only if you choose a specific origin instead of the * wildcard.
 
 Resources:
+  # UUID Layer
+  #UUIDLayer:
+   # Type: AWS::Serverless::LayerVersion
+    #Properties:
+     # LayerName: UUIDLayer
+      #Description: Layer for UUID library
+      #ContentUri: layer/uuid/nodejs
+      #CompatibleRuntimes:
+      #  - nodejs16.x
+
   # Lambda function to handle POST /users
   PostUserFunction:
     Type: AWS::Serverless::Function

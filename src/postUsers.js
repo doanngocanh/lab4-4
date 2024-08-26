@@ -1,3 +1,4 @@
+const { v4: uuidv4 } = require('uuid');
 const AWS = require('aws-sdk');
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
@@ -9,15 +10,16 @@ exports.handler = async (event) => {
     };
 
     try {
-        const { id, name } = JSON.parse(event.body);
+        const { name } = JSON.parse(event.body);
+        const id =uuidv4();
 
-        if (!id || !name) {
-            return {
-                statusCode: 400,
-                headers: headers,
-                body: JSON.stringify({ message: "Missing required fields" }),
-            };
-        }
+      //  if (!id || !name) {
+        //    return {
+          //      statusCode: 400,
+            //    headers: headers,
+              //  body: JSON.stringify({ message: "Missing required fields" }),
+           // };
+        //}
 
         const params = {
             TableName: 'AnhUser', // Tên bảng cố định
